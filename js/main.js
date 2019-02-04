@@ -180,10 +180,13 @@ function makeRandomMove() {
     GLOBAL.boardState,
     GLOBAL.nextPlayerTurn
   );
+
+  let max = indexOfMax(neurons.map(n => n.value))
   console.log("neurons:", neurons);
 
-
-  const column = getRandomInteger(0, 7);
+    console.log('max', max)
+  // const column = getRandomInteger(0, 7);
+  const column = max
   makeMove(GLOBAL.boardState, column);
 }
 
@@ -191,7 +194,24 @@ function getRandomInteger(min, max) {
   return Math.floor(Math.random() * (max - min) + min);
 }
 
-console.log(GLOBAL.boardState);
+
+function indexOfMax(arr) {
+  if (arr.length === 0) {
+      return -1;
+  }
+
+  var max = arr[0];
+  var maxIndex = 0;
+
+  for (var i = 1; i < arr.length; i++) {
+      if (arr[i] > max) {
+          maxIndex = i;
+          max = arr[i];
+      }
+  }
+
+  return maxIndex;
+}
 
 
 
@@ -339,9 +359,14 @@ function applyBoardLayer(layer, board) {
   }
 }
 
-const randomNeuralNetwork = window.localStorage.getItem('connectFourNeuralNetwork')
 
-if (!randomNeuralNetwork) {
+
+const rnn = JSON.stringify(createNeuralNetwork())
+
+if (!JSON.parse(window.localStorage.getItem('connectFourNeuralNetwork'))) {
   console.log('initializing neural network for the first time!')
-  window.localStorage.setItem('connectFourNeuralNetwork', randomNeuralNetwork)
+  window.localStorage.setItem('connectFourNeuralNetwork', rnn)
 }
+
+const randomNeuralNetwork = JSON.parse(window.localStorage.getItem('connectFourNeuralNetwork'))
+console.log(randomNeuralNetwork)
