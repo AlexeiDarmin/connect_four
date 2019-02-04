@@ -24,8 +24,16 @@ function buildBoard() {
 
     cellElement.addEventListener("click", function() {
       const column = i % 7;
-      makeMove(GLOBAL.boardState, column);
-      makeRandomMove();
+      const moveMade = makeMove(GLOBAL.boardState, column);
+
+      // save snapshot of move to localStorage
+      if (trackingBestMove) {
+        saveToTrainer.moveMade = moveMade
+
+        commitToTrainer(saveToTrainer)
+        trackingBestMove = false
+      }
+      // makeRandomMove();
     });
 
     boardContainer.appendChild(cellElement);
@@ -66,10 +74,10 @@ function makeMove(boardState, column) {
   gameState = getGameState(boardState);
   if (gameState !== GAME_STATE.ONGOING) {
     console.log("game ended, player won: ", gameState);
-    return;
+    return index
   }
 
-  return boardState;
+  return index;
 }
 
 // Returns the index of lowest empty row at the specific column, -1 if no available empty cells.
@@ -361,6 +369,38 @@ function applyBoardLayer(layer, board) {
 
 
 
+
+let saveToTrainer = {
+  board: null,
+  moveMade: null
+}
+
+let trackingBestMove = false
+
+// Once clicked, stores the current gameState and listens for the expected move.
+// Saves the gamestate and the expected ideal move to localstorage trainer
+function activateTrainerTracker() {
+  saveToTrainer.board = GLOBAL.boardState
+  trackingBestMove = true
+}
+
+
+function commitToTrainer() {
+  let trainingData = JSON.parse(window.localStorage.getItem('trainingData')) || []
+  trainingData.push(saveToTrainer)
+
+  if (trainingData.length > 5) {
+    trainingData = trainingData.slice(1, trainingData.length - 1)
+  }
+  window.localStorage.setItem('trainingData', JSON.stringify(trainingData))
+}
+
+// suppose bot = PLAYERS.PLAYER_ONE
+// be able to evaluate game state in respect to if the bot is player one or two.
+
+
+
+
 const rnn = JSON.stringify(createNeuralNetwork())
 
 if (!JSON.parse(window.localStorage.getItem('connectFourNeuralNetwork'))) {
@@ -370,3 +410,5 @@ if (!JSON.parse(window.localStorage.getItem('connectFourNeuralNetwork'))) {
 
 const randomNeuralNetwork = JSON.parse(window.localStorage.getItem('connectFourNeuralNetwork'))
 console.log(randomNeuralNetwork)
+
+console.log('training data: ', JSON.parse(window.localStorage.getItem('trainingData')))
