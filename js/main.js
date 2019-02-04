@@ -21,6 +21,13 @@ function buildBoard() {
   for (let i = 0; i < 42; i++) {
     const cellElement = document.createElement("DIV");
     cellElement.classList.add("cell");
+
+    cellElement.addEventListener("click", function() {
+      const column = i % 7;
+      makeMove(GLOBAL.boardState, column);
+      makeRandomMove();
+    });
+
     boardContainer.appendChild(cellElement);
   }
 }
@@ -43,10 +50,10 @@ function togglePlayerTurn() {
 }
 
 function makeMove(boardState, column) {
-  const gameState = getGameState(boardState)
+  let gameState = getGameState(boardState);
   if (gameState !== GAME_STATE.ONGOING) {
-    console.log('game ended, player won: ', gameState)
-    return 
+    console.log("game ended, player won: ", gameState);
+    return;
   }
 
   const index = findIndexOfLowestRow(boardState, column);
@@ -54,6 +61,12 @@ function makeMove(boardState, column) {
     boardState[index] = GLOBAL.nextPlayerTurn;
     togglePlayerTurn();
     updateDOM(boardState, index);
+  }
+
+  gameState = getGameState(boardState);
+  if (gameState !== GAME_STATE.ONGOING) {
+    console.log("game ended, player won: ", gameState);
+    return;
   }
 
   return boardState;
@@ -82,7 +95,7 @@ function updateDOM(boardState, index) {
 function getGameState(boardState) {
   // Check rows for a win
   for (let r = 0; r < 5; r++) {
-    for (let c = 0; c <= 4; c++) {
+    for (let c = 0; c < 4; c++) {
       const i = r * 7 + c;
       const isWinning = isWinningSlice(boardState.slice(i, i + 4));
       if (isWinning !== false) return isWinning;
@@ -97,35 +110,35 @@ function getGameState(boardState) {
         boardState[(r + 1) * 7 + c],
         boardState[(r + 2) * 7 + c],
         boardState[(r + 3) * 7 + c]
-      ]
+      ];
       const isWinning = isWinningSlice(boardSlice);
       if (isWinning !== false) return isWinning;
     }
   }
 
   // Check diagonals for a win
-  for (let r = 0; r < 6; r++) {
+  for (let r = 0; r < 3; r++) {
     for (let c = 0; c < 7; c++) {
-      // Checks right diagonal
+      // Checks left diagonal
       if (c < 4) {
         const boardSlice = [
           boardState[r * 7 + c],
           boardState[(r + 1) * 7 + c + 1],
           boardState[(r + 2) * 7 + c + 2],
           boardState[(r + 3) * 7 + c + 3]
-        ]
+        ];
         const isWinning = isWinningSlice(boardSlice);
         if (isWinning !== false) return isWinning;
       }
 
-      // Checks left diagonal
+      // Checks right diagonal
       if (c > 3) {
         const boardSlice = [
           boardState[r * 7 + c],
           boardState[(r + 1) * 7 + c - 1],
           boardState[(r + 2) * 7 + c - 2],
           boardState[(r + 3) * 7 + c - 3]
-        ]
+        ];
         const isWinning = isWinningSlice(boardSlice);
         if (isWinning !== false) return isWinning;
       }
@@ -139,8 +152,7 @@ function getGameState(boardState) {
   return GAME_STATE.DRAW;
 }
 
-
-console.log('winning slice test', isWinningSlice([1,1,1,1]))
+console.log("winning slice test", isWinningSlice([1, 1, 1, 1]));
 // Takes 4 cells and returns the winning player's ID if they all match that one player.
 // Returns false otherwise.
 function isWinningSlice(miniBoard) {
@@ -160,9 +172,17 @@ function isWinningSlice(miniBoard) {
 
 // Hacky random moves below
 
-setInterval(makeRandomMove, 1000);
+// setInterval(makeRandomMove, 100);
 
 function makeRandomMove() {
+  const neurons = applyGameStateToNeuralNetwork(
+    randomNeuralNetwork,
+    GLOBAL.boardState,
+    GLOBAL.nextPlayerTurn
+  );
+  console.log("neurons:", neurons);
+
+
   const column = getRandomInteger(0, 7);
   makeMove(GLOBAL.boardState, column);
 }
@@ -173,15 +193,155 @@ function getRandomInteger(min, max) {
 
 console.log(GLOBAL.boardState);
 
-// event listeners for columns - only applicable for player v player - HTML side
-// API for making moves
+
+
+
+
+
+
+
+
+
 
 /*
-  Making moves
-- pick a column
-- find the lowest empty row to fit a piece
+  Neural network code
 */
 
-/* 
-  Check win conditions
-*/
+// Creates a layer of neurons
+function createNeuralLayer(length) {
+  const neurons = [];
+  for (let i = 0; i < length; i++) {
+    neurons.push(createNeuron());
+  }
+  return neurons;
+}
+
+function createNeuron() {
+  return {
+    value: 0,
+    childrenSynapse: []
+  };
+}
+
+// Creates synapsis between layers of neurons
+function linkSynapsis(neuralNetwork) {
+  for (let i = 1; i < neuralNetwork.length; i++) {
+    const parentLayer = neuralNetwork[i - 1];
+    const currentLayer = neuralNetwork[i]
+
+    for (let parent_index = 0; parent_index < parentLayer.length; parent_index++) {
+      for (let child_index = 0; child_index < currentLayer.length; child_index++) {
+        const parentNeuron = parentLayer[parent_index];
+        const childNeuron = currentLayer[child_index];
+        createSynapse(parentNeuron, childNeuron);
+      }
+    }
+  }
+  return neuralNetwork;
+}
+
+function createSynapse(neuronOne, neuronTwo) {
+  neuronOne.childrenSynapse.push({
+    weight: getRandom(0, 1),
+    neuron: neuronTwo
+  });
+}
+
+// A neural network is a list of neural layers.
+function createNeuralNetwork() {
+  const inputLayerOne = createNeuralLayer(2);
+  const inputLayerTwo = createNeuralLayer(126);
+  const outputLayer = createNeuralLayer(8);
+
+  const neuralNetwork = linkSynapsis([
+    inputLayerOne,
+    inputLayerTwo,
+    outputLayer
+  ]);
+
+  console.log(neuralNetwork[0], neuralNetwork[1], neuralNetwork[2])
+
+  return neuralNetwork;
+}
+
+function getRandom(min, max) {
+  return Math.random() * (max - min) + min;
+}
+
+// Updates the values of each input node with the relevant values from the game state
+function applyGameStateToNeuralNetwork(neuralNetwork, board, playerTurn) {
+  applyPlayerLayer(neuralNetwork[0], playerTurn);
+  applyBoardLayer(neuralNetwork[1], board);
+  debugger
+  sumLayers(neuralNetwork[0], neuralNetwork[1]);
+  resetLayer(neuralNetwork[2]);
+  sumLayers(neuralNetwork[1], neuralNetwork[2]);
+
+  console.log("neural network results: ", neuralNetwork[2]);
+  return neuralNetwork[2];
+}
+
+// Evaluates the output layer based on the other neural layers and synapses.
+function sumLayers(parentLayer, childLayer) {
+  for (let i = 0; i < childLayer.length; i++) {
+    debugger;
+    const childNeuron = childLayer[i];
+    let sum = 0;
+    // calculate the sum of influence of the parent synapsis on current value
+    for (let p = 0; p < parentLayer.length; p++) {
+      sum += (parentLayer[p].value * parentLayer[p].childrenSynapse[i].weight)
+    }
+    debugger
+    const influence = sum / parentLayer.length;
+    childNeuron.value += influence;
+  }
+}
+
+// Resets the values at the given layer
+function resetLayer(layer) {
+  for (let i = 0; i < layer.length; i++) {
+    layer[i].value = 0;
+  }
+  console.log('reset layer:', layer)
+}
+
+function applyPlayerLayer(layer, player) {
+  layer[0].value = player === PLAYERS.PLAYER_ONE ? 1 : 0;
+  layer[1].value = player === PLAYERS.PLAYER_ONE ? 0 : 1;
+}
+
+function applyBoardLayer(layer, board) {
+  // Empty cells
+  for (let i = 0; i < board.length; i++) {
+    if (board[i] === PLAYERS.EMPTY) {
+      layer[i].value = 1;
+    } else {
+      layer[i].value = 0;
+    }
+  }
+
+  // Player one owned cells
+  for (let i = 0; i < board.length; i++) {
+    if (board[i] === PLAYERS.PLAYER_ONE) {
+      layer[i + (board.length - 1)].value = 1;
+    } else {
+      layer[i + (board.length - 1)].value = 0;
+    }
+  }
+
+  // Player two owned cells
+  for (let i = 0; i < board.length; i++) {
+    if (board[i] === PLAYERS.PLAYER_ONE) {
+      layer[i + (board.length - 1) * 2].value = 1;
+    } else {
+      layer[i + (board.length - 1) * 2].value = 0;
+    }
+  }
+}
+
+const randomNeuralNetwork = window.localStorage.getItem('connectFourNeuralNetwork')
+
+if (!randomNeuralNetwork) {
+  console.log('initializing neural network for the first time!')
+  window.localStorage.setItem('connectFourNeuralNetwork', randomNeuralNetwork)
+}

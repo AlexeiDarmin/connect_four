@@ -292,8 +292,10 @@ textarea {
 
 .boardContainer > .player_one {
   background-image: linear-gradient(#ff6666,#d40000);
+  box-shadow: 0px 0px 1px #0000007d;
 }
 
 .boardContainer > .player_two {
   background-image: linear-gradient(#ffffb7,yellow);
+  box-shadow: 0px 0px 1px #0000007d;
 }
